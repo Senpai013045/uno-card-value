@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uno card value</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: inherit;
+    }
+
+    html {
+      font-size: 62.5%;
+      color: #333;
+    }
+
+    body {
+      box-sizing: border-box;
+    }
+
+    #app {
+      width: 60rem;
+      margin: 0 auto;
+      padding: 2rem;
+      padding-bottom: 5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 5rem;
+      font-size: 2rem;
+    }
+
+    #cards {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .card {
+      list-style: none;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+
+    }
+
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+    }
+
+    /* w3 schools*/
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    table td,
+    table th {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+
+    table tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    table tr:hover {
+      background-color: #ddd;
+    }
+
+    table th {
+      text-align: left;
+      background-color: #04AA6D;
+      color: white;
+    }
+
+    button {
+      background-color: #04AA6D;
+      border: none;
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <ul id="cards"></ul>
+    <button>Reset inventory</button>
+    <hr>
+    <div id="calculation">
+      table here
+    </div>
+  </div>
+  <script type="text/javascript">
+    // @ts-check
+    /**
+    * @template T
+    */
+    class ObservableStore {
+      /**
+       * @param {T} initialState
+       */
+      constructor(initialState) {
+        /**@type {T} */
+        this.state = initialState;
+        /**@type  {Array<(state:T)=>void>} */
+        this.listeners = [];
+      }
+      getState() {
+        return this.state;
+      }
+      /**
+       * @param {T} state
+       */
+      setState(state) {
+        this.state = state;
+        this.listeners.forEach((listener) => listener(this.state));
+      }
+      /**
+       * @param {(state:T)=>void} listener
+       */
+      subscribe(listener) {
+        this.listeners.push(listener);
+      }
+      /**
+       * @param {(state:T)=>void} listener
+       */
+      unsubscribe(listener) {
+        this.listeners = this.listeners.filter((l) => l !== listener);
+      }
+    }
+    /**@type {Map<string,number>} */
+    const defaultInventory = new Map() // face => count
+
+    const inventoryState = new ObservableStore(defaultInventory);
+
+    const CARDS = [
+      {
+        face: "skip",
+        value: 10
+      },
+      {
+        face: "wild",
+        value: 11
+      },
+      {
+        face: "reverse",
+        value: 12
+      },
+      {
+        face: "+2",
+        value: 13
+      },
+      {
+        face: "+4",
+        value: 14
+      },
+    ];
+
+    //add 0-9 cards
+    for (let i = 0; i < 10; i++) {
+      CARDS.push({
+        face: i.toString(),
+        value: i
+      });
+    }
+
+    /**
+     * @param {string} face
+     * @param {number} count
+    */
+    const handleAddCard = (face, count) => {
+      const currentInventory = inventoryState.getState();
+      const currentCount = currentInventory.get(face) || 0;
+      //min is 0
+      const newCount = Math.max(0, currentCount + count);
+      const newInventory = new Map(currentInventory);
+      newInventory.set(face, newCount);
+      inventoryState.setState(newInventory);
+    }
+
+    const cardsContainer = document.getElementById("cards");
+    const calculationContainer = document.getElementById("calculation");
+    const resetButton = document.querySelector("button");
+
+    if (resetButton) {
+      resetButton.onclick = () => inventoryState.setState(defaultInventory);
+    }
+    /**
+     * @param {Map<string,number>} state
+     */
+    const render = (
+      state
+    ) => {
+      if (!cardsContainer || !calculationContainer) {
+        return;
+      }
+      cardsContainer.innerHTML = "";
+      calculationContainer.innerHTML = "";
+      /*
+      <li class="card">
+        <div> //flex between
+          <h3>face</h3> 
+          <p>value of {value}//if in inventory , {count} in inventory</p>
+        </div>
+        <div>
+          <button onclick="handleAddCard(face,1)">+</button>
+          <button onclick="handleAddCard(face,-1)">-</button>
+        </div>
+      </li>
+      */
+      CARDS.forEach((card) => {
+        const cardContainer = document.createElement("li");
+        cardContainer.className = "card";
+        const titleContainer = document.createElement("div");
+        titleContainer.className = "flex-between";
+        titleContainer.style.marginBottom = "5px";
+        const title = document.createElement("h3");
+        title.textContent = card.face;
+        const value = document.createElement("p");
+        const count = state.get(card.face) || 0;
+        value.textContent = `value of ${card.value} ${count ? `, ${count} in inventory` : ""}`;
+        titleContainer.appendChild(title);
+        titleContainer.appendChild(value);
+        const buttonsContainer = document.createElement("div");
+        const addButton = document.createElement("button");
+        addButton.textContent = "add";
+        addButton.onclick = () => handleAddCard(card.face, 1);
+        addButton.style.marginRight = "5px";
+        const removeButton = document.createElement("button");
+        removeButton.textContent = "remove";
+        removeButton.onclick = () => handleAddCard(card.face, -1);
+        buttonsContainer.appendChild(addButton);
+        buttonsContainer.appendChild(removeButton);
+        cardContainer.appendChild(titleContainer);
+        cardContainer.appendChild(buttonsContainer);
+        cardsContainer.appendChild(cardContainer);
+      });
+
+      //lets create a table 
+      const table = document.createElement("table");
+      table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Face</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from(state)
+          .filter(([face, count]) => count > 0)
+          .map(([face, count]) => `
+          <tr>
+            <td>${face}</td>
+            <td>${count}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+        </tr>
+      `;
+      calculationContainer.appendChild(table);
+      const totalsContainer = document.createElement("h4");
+      let total = 0;
+      for (const item of CARDS) {
+        const count = state.get(item.face) || 0;
+        total += count * item.value;
+      }
+      totalsContainer.textContent = `Total value of inventory is ${total}`;
+      totalsContainer.style.marginTop = "3rem";
+      calculationContainer.appendChild(totalsContainer);
+
+
+    }
+
+    render(defaultInventory);
+
+    inventoryState.subscribe(render);
+
+
+  </script>
+</body>
+
+</html>
