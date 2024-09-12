@@ -233,7 +233,7 @@
         title.textContent = card.face;
         const value = document.createElement("p");
         const count = state.get(card.face) || 0;
-        value.textContent = `value of ${card.value} ${count ? `, ${count} in inventory` : ""}`;
+        value.textContent = `value: ${card.value} ${count ? `, (${count})` : ""}`;
         titleContainer.appendChild(title);
         titleContainer.appendChild(value);
         const buttonsContainer = document.createElement("div");
